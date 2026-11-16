@@ -864,7 +864,9 @@ fn a_volcano_off_the_map_is_refused_and_leaves_no_cone() {
         r: 5,
     });
     sim.grid.placed_volcanoes.push(Volcano { x: 120, y: 110, r: 6 });
-    let loaded = Simulation::from_save(sim.world_seed, sim.to_save_state());
+    let mut legacy = sim.to_save_state();
+    legacy.version = 7;
+    let loaded = Simulation::migrate_legacy_checkpoint(sim.world_seed, legacy).unwrap();
     assert_eq!(
         loaded.grid.placed_volcanoes,
         vec![Volcano { x: 120, y: 110, r: 6 }]

@@ -59,8 +59,8 @@ const WORK: [Skill; 6] = [
     Skill::Hunting,
 ];
 
-/// A stint of work: what, where, and until when. Runtime only.
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// A stint of work: what, where, and until when. Saved with the checkpoint.
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct WorkPlan {
     pub skill: Skill,
     /// The tile to work from (beside the water, the rock face, the trees...).

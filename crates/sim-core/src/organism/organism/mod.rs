@@ -128,15 +128,15 @@ pub struct Organism {
     pub sleep_debt: f32,
     pub water_ticks: u32,
     /// What last hurt this person, and when: a death is told by its true
-    /// cause instead of every wound counting as combat. Runtime only.
+    /// cause instead of every wound counting as combat. Saved with the checkpoint.
     pub last_harm: Option<(Harm, u64)>,
     pub area_ticks: u32,
     pub last_area_cell: (i32, i32),
     pub wander_target: Option<(i32, i32)>,
     pub journey: Option<Journey>,
-    /// Today's stint of everyday work, if any (see `sim::agents::daily_work`). Runtime only.
+    /// Today's stint of everyday work, if any (see `sim::agents::daily_work`). Saved with the checkpoint.
     pub work: Option<crate::sim::agents::daily_work::WorkPlan>,
-    /// Remembered route around obstacles; runtime only, never saved.
+    /// Remembered route around obstacles; saved with the checkpoint.
     pub route: super::navigation::RouteCell,
     pub last_groomed: u64,
     pub last_fed_kin: u64,

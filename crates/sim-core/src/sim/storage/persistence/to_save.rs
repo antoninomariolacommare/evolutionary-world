@@ -19,6 +19,7 @@ impl Simulation {
     /// next tick can run while serde_json + fs::write happen.
     pub fn to_save_state(&self) -> SaveState {
         SaveState {
+            runtime: Some(super::runtime::RuntimeSave::capture(self)),
             version: SAVE_SCHEMA_VERSION,
             tick_count: self.tick_count,
             next_animal_id: self.next_animal_id,
@@ -40,16 +41,12 @@ impl Simulation {
                 wind_last_tick: self.weather.wind_last_tick,
                 heat_until: self.weather.heat_until,
             },
-            // Cap unbounded VecDeques on save. Their in-memory caps
-            // are larger than what makes sense to persist; if we ship
-            // them whole, save bloats linearly with playtime and the
-            // serde_json::to_string allocation eats the spawn_blocking
-            // budget. The tail is what subsequent reads actually need.
-            pop_history: self.pop_history.iter().rev().take(300).rev().cloned().collect(),
+            // Preserve the state at the checkpoint; retention is a runtime policy.
+            pop_history: self.pop_history.iter().cloned().collect(),
             lineage_centroid_history: self
                 .lineage_centroid_history
                 .iter()
-                .map(|(k, v)| (k.clone(), v.iter().rev().take(60).rev().cloned().collect()))
+                .map(|(k, v)| (k.clone(), v.iter().cloned().collect()))
                 .collect(),
             lineage_homes: self.lineage_homes.clone(),
             lineage_eras: self.lineage_eras.clone(),
@@ -59,15 +56,10 @@ impl Simulation {
             lineage_war_weariness: self.lineage_war_weariness.clone(),
             lineage_crime: self.lineage_crime.clone(),
             goals: self.goals.clone(),
-            events: self.events.iter().rev().take(200).rev().cloned().collect(),
+            events: self.events.iter().cloned().collect(),
             organisms: self.organisms.iter().map(org_to_save).collect(),
             animals: self.animals.iter().map(animal_to_save).collect(),
-            game_wariness: {
-                let mut patches: Vec<(i32, i32, f32)> =
-                    self.game_wariness.iter().map(|(&(x, y), &w)| (x, y, w)).collect();
-                patches.sort_by_key(|&(x, y, _)| (x, y));
-                patches
-            },
+            game_wariness: self.game_wariness.iter().map(|(&(x, y), &w)| (x, y, w)).collect(),
             carcasses: self
                 .carcasses
                 .iter()
@@ -79,7 +71,7 @@ impl Simulation {
                     picked: c.picked,
                 })
                 .collect(),
-            story_history: self.story_history.iter().rev().take(120).rev().cloned().collect(),
+            story_history: self.story_history.iter().cloned().collect(),
             grid: GridSave {
                 tiles: self.grid.tiles.clone(),
                 elevation: self.grid.elevation.clone(),
@@ -105,14 +97,7 @@ impl Simulation {
             lineage_names: self.lineage_names.clone(),
             lineage_strategies: self.lineage_strategies.clone(),
             lineage_strategy_objectives: self.lineage_strategy_objectives.clone(),
-            lineage_strategy_history: self
-                .lineage_strategy_history
-                .iter()
-                .rev()
-                .take(40)
-                .rev()
-                .cloned()
-                .collect(),
+            lineage_strategy_history: self.lineage_strategy_history.iter().cloned().collect(),
             lineage_elders: self.lineage_elders.clone(),
             rng: Some(self.rng.clone()),
             flood_tiles: self.flood_tiles.clone(),
@@ -152,8 +137,8 @@ impl Simulation {
             outbreaks: self.outbreaks.clone(),
             milestones_achieved: self.milestones_achieved.clone(),
             lineage_peak_pop: self.lineage_peak_pop.clone(),
-            headlines: self.headlines.iter().rev().take(160).rev().cloned().collect(),
-            trades: self.trades.iter().rev().take(500).rev().cloned().collect(),
+            headlines: self.headlines.iter().cloned().collect(),
+            trades: self.trades.iter().cloned().collect(),
             trade_routes: self.trade_routes.clone(),
             village_roads: self.village_roads.clone(),
             rail_lines: self.rail_lines.clone(),

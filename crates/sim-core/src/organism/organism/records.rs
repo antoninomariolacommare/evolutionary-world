@@ -39,7 +39,7 @@ pub struct Journey {
 }
 
 /// What can wound a person.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Harm {
     /// A brawl, duel or thrown stone between neighbours.
     Fight,

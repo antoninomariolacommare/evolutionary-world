@@ -101,6 +101,7 @@ pub(crate) struct WaterUseSave {
 #[derive(Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SaveState {
+    pub(super) runtime: Option<super::runtime::RuntimeSave>,
     pub(crate) version: u32,
     pub(crate) tick_count: u64,
     pub(super) next_animal_id: usize,
@@ -110,7 +111,7 @@ pub struct SaveState {
     pub(super) events: Vec<Event>,
     pub(crate) organisms: Vec<OrgSave>,
     pub(crate) animals: Vec<AnimalSave>,
-    /// Wary game by patch of land: (patch x, patch y, wariness), sorted.
+    /// Wary game by patch of land: (patch x, patch y, wariness), in insertion order.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(super) game_wariness: Vec<(i32, i32, f32)>,
     #[serde(default)]

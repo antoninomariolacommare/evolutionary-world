@@ -154,7 +154,9 @@ fn mutable_depth_wind_and_operational_infrastructure_survive_reload() {
     sim.grid.set(well_x + 2, well_y, Tile::Grass);
     sim.buildings.push(unfinished_well);
 
-    let loaded = Simulation::from_save(seed, sim.to_save_state());
+    let mut legacy = sim.to_save_state();
+    legacy.version = 7;
+    let loaded = Simulation::migrate_legacy_checkpoint(seed, legacy).unwrap();
 
     assert_eq!(loaded.grid.get(water_x, water_y), Tile::Water);
     assert!((loaded.grid.depth_at(water_x, water_y) - 0.73).abs() < f32::EPSILON);
@@ -201,7 +203,7 @@ fn loading_latches_timestamp_less_full_damage_as_a_ruin() {
     use crate::sim::buildings::{Building, BuildingKind};
 
     let mut state = SaveState {
-        version: SAVE_SCHEMA_VERSION,
+        version: 7, // legacy repair fixture
         tick_count: 321,
         ..SaveState::default()
     };
@@ -317,7 +319,7 @@ fn loading_repairs_dangling_religions_and_exact_live_adherent_counts() {
     use crate::sim::culture::{Religion, ReligionKind};
 
     let mut state = SaveState {
-        version: SAVE_SCHEMA_VERSION,
+        version: 7, // legacy repair fixture
         ..SaveState::default()
     };
     state.religions.extend([

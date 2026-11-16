@@ -1,0 +1,17 @@
+[
+  {
+    "file": "before-continuous.json",
+    "bytes": 19683385,
+    "sha256": "f6f35f283f0935001566452f49f3fa4e7a20d46ce23a2a405e9fd5d277dbcf26"
+  },
+  {
+    "file": "before-checkpoint.json",
+    "bytes": 19479908,
+    "sha256": "01b9a748bce0fb03a877ee18aba1402f46a254e4f5096008b0ad5d16b7ef319d"
+  },
+  {
+    "file": "before-resumed.json",
+    "bytes": 19741435,
+    "sha256": "5f1355b2a446c4f3bb81fc276a672af97b7c377013523add1eaeec3d08c103bd"
+  }
+]

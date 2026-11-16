@@ -116,9 +116,9 @@ pub struct Simulation {
     pub lineage_winter_memory: HashMap<String, crate::sim::civ::society::hard_winters::WinterMemory>,
     /// How weary of war each tribe is, and how many of its people have fallen.
     pub lineage_war_weariness: HashMap<String, crate::sim::civ::society::war_weariness::WarWeariness>,
-    /// The craft each tribe is known for (see `civ::society::tribe_crafts`). Runtime only, worked out daily.
+    /// The craft each tribe is known for (see `civ::society::tribe_crafts`). Saved; updated daily.
     pub lineage_crafts: HashMap<String, crate::organism::skills::Skill>,
-    /// Whether `lineage_crafts` has been worked out since the world was made or loaded. Runtime only.
+    /// Whether `lineage_crafts` has been worked out since the world was made or loaded. Saved.
     pub lineage_crafts_ready: bool,
     /// Thefts, killings and punishments in each tribe (civ/society/crime.rs).
     pub lineage_crime: HashMap<String, crate::sim::civ::society::crime::CrimeTally>,
@@ -144,11 +144,11 @@ pub struct Simulation {
     pub next_farm_id: u32,
     pub vehicles: Vec<super::transportation::Vehicle>,
     pub next_vehicle_id: u32,
-    /// The last land survey for ferries (see `tech/ferry.rs`); rebuilt every few hundred ticks, not saved.
+    /// The last land survey for ferries (see `tech/ferry.rs`); rebuilt every few hundred ticks and saved.
     pub(crate) ferry_survey: crate::sim::tech::ferry::FerrySurvey,
     /// What the command in progress reported about itself (see `command/outcome.rs`). Runtime only.
     pub(crate) command_report: Option<crate::sim::command::outcome::Report>,
-    /// The people queued at each ferry pier, and the passengers aboard (see `tech/ferry.rs`); not saved.
+    /// The people queued at each ferry pier, and the passengers aboard (see `tech/ferry.rs`); saved.
     pub(crate) ferry_queues: crate::sim::tech::ferry::FerryQueues,
     pub battles: Vec<super::warfare::Battle>,
     pub next_battle_id: u32,
@@ -212,8 +212,7 @@ pub struct Simulation {
     pub sex_words: [String; 2],
     pub world_seed: u64,
     pub(crate) next_animal_id: usize,
-    /// Wild animals of each censused kind at the last census (not saved: a
-    /// reload takes a fresh census before it announces anything).
+    /// Wild animals of each kind at the last census, saved to retain announcement timing.
     pub(crate) animal_census: Vec<u32>,
     pub(crate) rng: ChaCha8Rng,
     pub last_immigration_tick: u64,
@@ -399,7 +398,7 @@ impl Simulation {
 
     /// Sets the natural population ceiling for this runtime. Hosted and WASM
     /// worlds keep the conservative default; downloadable worlds can opt into
-    /// a much larger long game without changing the save format.
+    /// a much larger long game and the chosen limit is saved in schema 8.
     pub fn set_population_limit(&mut self, limit: usize) -> usize {
         self.population_limit = limit.clamp(MIN_POPULATION_LIMIT, MAX_POPULATION_LIMIT);
         self.population_limit

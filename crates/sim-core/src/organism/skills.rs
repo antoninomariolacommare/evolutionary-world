@@ -9,7 +9,7 @@
 use crate::sim::age_stage::AgeStage;
 use std::collections::BTreeMap;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize)]
 pub enum Skill {
     Woodcutting,
     Quarrying,
@@ -98,7 +98,7 @@ const FAILURE_SHARE: f32 = 0.4;
 /// What watching someone better at it teaches, per attempt seen, per unit of the gap.
 const WATCH_RATE: f32 = 0.01;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Skills {
     levels: [f32; Skill::ALL.len()],
     /// How the person feels about each kind of work, from dread (-1) to a

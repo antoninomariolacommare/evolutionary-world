@@ -146,11 +146,12 @@ fn road_share_measures_how_much_of_a_line_is_road() {
 }
 
 #[test]
-fn a_save_without_the_road_layer_loads_with_none() {
+fn a_legacy_save_without_the_road_layer_migrates_with_none() {
     let sim = Simulation::new(5);
     let mut value = serde_json::to_value(sim.to_save_state()).expect("save state to value");
+    value["version"] = 7.into();
     value["grid"].as_object_mut().expect("grid object").remove("road");
     let state: SaveState = serde_json::from_value(value).expect("save state from value");
-    let back = Simulation::from_save(5, state);
+    let back = Simulation::migrate_legacy_checkpoint(5, state).unwrap();
     assert!(back.grid.road.iter().all(|&k| k == ROAD_NONE));
 }

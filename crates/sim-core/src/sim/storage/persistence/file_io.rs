@@ -94,29 +94,15 @@ impl Simulation {
     /// headless `--load`, where the file is an input and must stay where it is.
     pub fn load_strict(seed: u64, path: &str) -> Result<Self, String> {
         let data = read_save(path).map_err(|err| err.to_string())?;
-        let state: SaveState =
-            serde_json::from_slice(&data).map_err(|err| format!("not a saved world: {err}"))?;
-        if state.version > SAVE_SCHEMA_VERSION {
-            return Err(format!(
-                "saved by a newer build (schema v{}, this build reads up to v{})",
-                state.version, SAVE_SCHEMA_VERSION
-            ));
+        let loaded = Self::from_checkpoint_bytes(seed, &data)?;
+        let version = serde_json::from_slice::<serde_json::Value>(&data)
+            .ok()
+            .and_then(|v| v.get("version").and_then(|v| v.as_u64()))
+            .unwrap_or(0);
+        if version < u64::from(SAVE_SCHEMA_VERSION) {
+            eprintln!("Migrated checkpoint schema {version} to {SAVE_SCHEMA_VERSION}: missing historical state was initialized; exact continuation of the old build is unavailable.");
         }
-        // `from_save` grows a fresh grid for any size it does not know, which would quietly run a different world.
-        let cells = state.grid.tiles.len();
-        if cells != WIDTH * HEIGHT && cells != resize::OLD_WIDTH * resize::OLD_HEIGHT {
-            return Err(format!(
-                "its map has {cells} cells; this build reads {WIDTH}x{HEIGHT} or the older {}x{}",
-                resize::OLD_WIDTH,
-                resize::OLD_HEIGHT
-            ));
-        }
-        let world_seed = if state.world_seed > 0 {
-            state.world_seed
-        } else {
-            seed
-        };
-        Ok(Self::from_save(world_seed, state))
+        Ok(loaded)
     }
 
     pub fn load_or_new(seed: u64, path: &str) -> Self {
@@ -141,66 +127,26 @@ impl Simulation {
                 );
                 Self::new(seed)
             }
-            Ok(data) => match serde_json::from_slice::<SaveState>(&data) {
-                Ok(state) => {
-                    if state.version != 0 && state.version > SAVE_SCHEMA_VERSION {
-                        // Newer schema than this binary supports - back up and
-                        // start fresh rather than silently filling with defaults.
-                        let backup = backup_path(path, &format!("future-v{}", state.version));
+            Ok(data) => {
+                match Self::from_checkpoint_bytes(seed, &data) {
+                    Ok(sim) => sim,
+                    Err(error) => {
+                        let version = serde_json::from_slice::<serde_json::Value>(&data)
+                            .ok()
+                            .and_then(|v| v.get("version").and_then(|v| v.as_u64()));
+                        let reason = match version {
+                            Some(v) if v > u64::from(SAVE_SCHEMA_VERSION) => format!("future-v{v}"),
+                            _ => "corrupt".to_owned(),
+                        };
+                        let backup = backup_path(path, &reason);
                         std::fs::rename(path, &backup).unwrap_or_else(|backup_error| {
-                            panic!(
-                                "Save at {} uses unsupported schema v{} ({}), and could not be preserved at {} ({}); refusing to start a fresh world",
-                                path, state.version, SAVE_SCHEMA_VERSION, backup, backup_error
-                            )
-                        });
-                        tracing::warn!(
-                            "Save at {} is schema v{} but this binary only supports v{}. \
-                             Backed up to {} and starting fresh world.",
-                            path,
-                            state.version,
-                            SAVE_SCHEMA_VERSION,
-                            backup
-                        );
-                        return Self::new(seed);
-                    }
-                    if state.version != 0 && state.version < SAVE_SCHEMA_VERSION {
-                        tracing::info!(
-                            "Loaded world from {} (tick {}, migrating schema v{} → v{})",
-                            path,
-                            state.tick_count,
-                            state.version,
-                            SAVE_SCHEMA_VERSION
-                        );
-                    } else {
-                        tracing::info!("Loaded world from {} (tick {})", path, state.tick_count);
-                    }
-                    let terrain_seed = if state.world_seed > 0 {
-                        state.world_seed
-                    } else {
-                        seed
-                    };
-                    Self::from_save(terrain_seed, state)
-                }
-                Err(e) => {
-                    // Don't overwrite a possibly-recoverable save on the next
-                    // `save()`. Back it up with a timestamp so the operator
-                    // can inspect it.
-                    let backup = backup_path(path, "corrupt");
-                    std::fs::rename(path, &backup).unwrap_or_else(|backup_error| {
-                        panic!(
-                            "Save at {} is corrupt ({}), and could not be preserved at {} ({}); refusing to start a fresh world",
-                            path, e, backup, backup_error
-                        )
+                        panic!("Invalid checkpoint ({error}); could not preserve {path} at {backup}: {backup_error}; refusing to start a fresh world")
                     });
-                    tracing::warn!("Backed up corrupt save to {}", backup);
-                    tracing::warn!(
-                        "Save at {} could not be deserialized ({}) - starting fresh world.",
-                        path,
-                        e
-                    );
-                    Self::new(seed)
+                        tracing::warn!("Checkpoint rejected ({error}); preserved at {backup}; recovery starts a fresh world");
+                        Self::new(seed)
+                    }
                 }
-            },
+            }
         }
     }
 }

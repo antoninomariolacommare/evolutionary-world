@@ -104,9 +104,9 @@ pub struct Building {
     #[serde(default)]
     pub last_repair_tick: Option<u64>,
     /// The last tick a builder put labour into this site. A site nobody has worked on for a
-    /// while is abandoned (palisade pieces, see `PALISADE_STALL_TICKS`). Not saved: a loaded
-    /// site counts from its start tick, so the saved world and its fingerprint are unchanged.
-    #[serde(skip)]
+    /// while is abandoned (palisade pieces, see `PALISADE_STALL_TICKS`). Current checkpoints
+    /// preserve this deadline; legacy checkpoints lacked it.
+    #[serde(default)]
     pub last_work_tick: Option<u64>,
     /// True only for ambient settlement scenery. Decorative buildings
     /// may be rotated out to keep long-running worlds fast; functional

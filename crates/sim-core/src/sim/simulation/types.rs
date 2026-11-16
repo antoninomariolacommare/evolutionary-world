@@ -1,6 +1,6 @@
 use super::*;
 
-pub const SAVE_SCHEMA_VERSION: u32 = 7;
+pub const SAVE_SCHEMA_VERSION: u32 = 8;
 
 /// Whether a system that runs every `period` ticks runs on `tick`, at `phase` in its cycle. The heavy periodic
 /// systems each take their own phase: on round periods (240, 600, 1200) they all fell on the same ticks, and a
@@ -31,6 +31,7 @@ pub struct StoryEntry {
     pub story: String,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct PendingMemoryFlush {
     pub org_id: String,
     pub org_name: String,
@@ -124,7 +125,7 @@ fn bump_year(years: &mut Vec<u32>, tick: u64) {
 /// Civilization systems previously re-counted and re-centred the same
 /// populations independently; this keeps those scheduled decisions cheap and
 /// internally consistent for the tick.
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, Serialize, Deserialize)]
 pub(crate) struct LineageAggregate {
     pub population: usize,
     pub x_sum: f32,

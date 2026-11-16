@@ -1,7 +1,19 @@
 use super::*;
 
 impl Simulation {
+    /// Restore a trusted in-memory state. External input must use `from_checkpoint_bytes`,
+    /// which checks field presence before serde defaults can hide missing data.
     pub fn from_save(seed: u64, mut state: SaveState) -> Self {
+        let exact = state.version == SAVE_SCHEMA_VERSION;
+        if exact {
+            super::validation::validate_current(&state).expect("invalid current checkpoint");
+        }
+        assert!(
+            state.version <= SAVE_SCHEMA_VERSION,
+            "unsupported checkpoint version"
+        );
+        let runtime = state.runtime.take();
+        let seed = if exact { state.world_seed } else { seed };
         if state.grid.tiles.len() == resize::OLD_WIDTH * resize::OLD_HEIGHT {
             resize::centre_old_world(&mut state, seed);
         }
@@ -54,12 +66,16 @@ impl Simulation {
             if state.grid.road.len() == expected {
                 grid.road = state.grid.road;
             }
-            for v in state.grid.placed_volcanoes {
-                // Saves written before off-map volcano posts were rejected may hold stray cones.
-                if !WorldGrid::in_bounds(v.x, v.y) {
-                    continue;
+            if exact {
+                grid.placed_volcanoes = state.grid.placed_volcanoes;
+            } else {
+                for v in state.grid.placed_volcanoes {
+                    // Saves written before off-map volcano posts were rejected may hold stray cones.
+                    if !WorldGrid::in_bounds(v.x, v.y) {
+                        continue;
+                    }
+                    grid.raise_volcano(v.x, v.y, v.r);
                 }
-                grid.raise_volcano(v.x, v.y, v.r);
             }
             grid.trail_dirty = (0..expected)
                 .filter(|&i| {
@@ -93,7 +109,7 @@ impl Simulation {
             .into_iter()
             .map(|saved| org_from_save(saved, save_version))
             .collect();
-        for org in &mut organisms {
+        for org in organisms.iter_mut().filter(|_| !exact) {
             org.x = org.x.clamp(1.0, WIDTH as f32 - 2.0);
             org.y = org.y.clamp(1.0, HEIGHT as f32 - 2.0);
         }
@@ -112,7 +128,7 @@ impl Simulation {
         let field_fortifications = state
             .field_fortifications
             .into_iter()
-            .filter(|fortification| grid.structure_at(fortification.x, fortification.y) > 0.0)
+            .filter(|fortification| exact || grid.structure_at(fortification.x, fortification.y) > 0.0)
             .collect();
         let mut physics = PhysicsEngine::new();
         // Simulation physics runs exactly once every five world ticks.
@@ -127,41 +143,91 @@ impl Simulation {
             }
         }
 
-        let next_animal_id = repaired_next_animal_id(state.next_animal_id, &state.animals);
+        let next_animal_id = if exact {
+            state.next_animal_id
+        } else {
+            repaired_next_animal_id(state.next_animal_id, &state.animals)
+        };
         let mut buildings = state.buildings;
-        let next_building_id = repaired_next_u32_id(state.next_building_id, buildings.iter().map(|b| b.id));
-        for building in &mut buildings {
+        let next_building_id = if exact {
+            state.next_building_id
+        } else {
+            repaired_next_u32_id(state.next_building_id, buildings.iter().map(|b| b.id))
+        };
+        for building in buildings.iter_mut().filter(|_| !exact) {
             if building.damage_fraction() >= 1.0 && building.ruined_at_tick.is_none() {
                 building.ruined_at_tick = Some(building.last_damage_tick.unwrap_or(state.tick_count));
             }
         }
         let mut religions = state.religions;
-        crate::sim::actions::religion_expanded::repair_persisted_religions(&mut organisms, &mut religions);
-        let next_religion_id = repaired_next_religion_id(state.next_religion_id, &religions);
-        let next_artwork_id =
-            repaired_next_u32_id(state.next_artwork_id, state.artworks.iter().map(|a| a.id));
-        let next_festival_id =
-            repaired_next_u32_id(state.next_festival_id, state.festivals.iter().map(|f| f.id));
-        let next_book_id = repaired_next_u32_id(state.next_book_id, state.books.iter().map(|b| b.id));
-        let next_farm_id = repaired_next_u32_id(state.next_farm_id, state.farms.iter().map(|f| f.id));
+        if !exact {
+            crate::sim::actions::religion_expanded::repair_persisted_religions(
+                &mut organisms,
+                &mut religions,
+            );
+        }
+        let next_religion_id = if exact {
+            state.next_religion_id
+        } else {
+            repaired_next_religion_id(state.next_religion_id, &religions)
+        };
+        let next_artwork_id = if exact {
+            state.next_artwork_id
+        } else {
+            repaired_next_u32_id(state.next_artwork_id, state.artworks.iter().map(|a| a.id))
+        };
+        let next_festival_id = if exact {
+            state.next_festival_id
+        } else {
+            repaired_next_u32_id(state.next_festival_id, state.festivals.iter().map(|f| f.id))
+        };
+        let next_book_id = if exact {
+            state.next_book_id
+        } else {
+            repaired_next_u32_id(state.next_book_id, state.books.iter().map(|b| b.id))
+        };
+        let next_farm_id = if exact {
+            state.next_farm_id
+        } else {
+            repaired_next_u32_id(state.next_farm_id, state.farms.iter().map(|f| f.id))
+        };
         let mut farms = state.farms;
-        crate::sim::agriculture::deduplicate_farm_plots(&mut farms);
-        let next_vehicle_id =
-            repaired_next_u32_id(state.next_vehicle_id, state.vehicles.iter().map(|v| v.id));
+        if !exact {
+            crate::sim::agriculture::deduplicate_farm_plots(&mut farms);
+        }
+        let next_vehicle_id = if exact {
+            state.next_vehicle_id
+        } else {
+            repaired_next_u32_id(state.next_vehicle_id, state.vehicles.iter().map(|v| v.id))
+        };
         // Battle IDs currently encode tick and lineages rather than this
         // sequence, but preserve a useful monotonic counter for old saves and
         // the eventual numeric-ID migration instead of resetting it to one.
-        let next_battle_id = repaired_next_sequence(state.next_battle_id, state.battles.len());
+        let next_battle_id = if exact {
+            state.next_battle_id
+        } else {
+            repaired_next_sequence(state.next_battle_id, state.battles.len())
+        };
         let mut treaties = state.treaties;
-        crate::sim::warfare::consolidate_treaties(&mut treaties, state.tick_count);
-        let next_trade_route_id = repaired_next_u32_id(
-            state.next_trade_route_id,
-            state.trade_routes.iter().map(|route| route.id),
-        );
-        let next_caravan_id = repaired_next_u32_id(
-            state.next_caravan_id,
-            state.caravans.iter().map(|caravan| caravan.id),
-        );
+        if !exact {
+            crate::sim::warfare::consolidate_treaties(&mut treaties, state.tick_count);
+        }
+        let next_trade_route_id = if exact {
+            state.next_trade_route_id
+        } else {
+            repaired_next_u32_id(
+                state.next_trade_route_id,
+                state.trade_routes.iter().map(|route| route.id),
+            )
+        };
+        let next_caravan_id = if exact {
+            state.next_caravan_id
+        } else {
+            repaired_next_u32_id(
+                state.next_caravan_id,
+                state.caravans.iter().map(|caravan| caravan.id),
+            )
+        };
 
         let mut sim = Simulation {
             grid,
@@ -171,7 +237,7 @@ impl Simulation {
             game_wariness: state
                 .game_wariness
                 .iter()
-                .map(|&(x, y, w)| ((x, y), w.clamp(0.0, 1.0)))
+                .map(|&(x, y, w)| ((x, y), if exact { w } else { w.clamp(0.0, 1.0) }))
                 .collect(),
             carcasses: state
                 .carcasses
@@ -230,7 +296,7 @@ impl Simulation {
             lineage_crafts_ready: false,
             lineage_crime: state.lineage_crime,
             lineage_aggregates: HashMap::default(),
-            current_era: if state.current_era.is_empty() {
+            current_era: if !exact && state.current_era.is_empty() {
                 "genesis".to_string()
             } else {
                 state.current_era
@@ -339,6 +405,11 @@ impl Simulation {
                 .map(|entry| ((entry.x, entry.y), entry.count))
                 .collect(),
         };
+        if exact {
+            runtime.expect("validated runtime state").restore(&mut sim);
+            return sim;
+        }
+        // Everything below is legacy migration, never current-schema restoration.
         // The save format only stores the forward map; rebuild the
         // inverse map after the struct exists. Last claim in the
         // iteration order wins (matches runtime "most recent wins"

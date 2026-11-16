@@ -246,7 +246,7 @@ impl Clone for RouteCell {
 /// A route kept aside: its goal, its waypoints and the next one to walk to.
 pub type KeptRoute = ((i32, i32), Vec<(i32, i32)>, usize);
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct RouteCache {
     pub goal: (i32, i32),
     pub steps: Vec<(i32, i32)>,

@@ -1,0 +1,34 @@
+{
+  "command": "cargo test --release --locked --workspace",
+  "exit_code": 0,
+  "headless": {
+    "passed": 10,
+    "failed": 0,
+    "ignored": 0
+  },
+  "sim_core": {
+    "passed": 1139,
+    "failed": 0,
+    "ignored": 1
+  },
+  "server": {
+    "passed": 33,
+    "failed": 0,
+    "ignored": 1
+  },
+  "doc_tests": {
+    "passed": 0,
+    "failed": 0,
+    "ignored": 0
+  },
+  "total_passed": 1182,
+  "total_failed": 0,
+  "total_ignored": 2,
+  "new_continuity_tests_passed": 6,
+  "log_sha256": "d80a08998bfebb27c5dfb94d2bdd03abafb9aba82e4933e95021aada5aec33bb",
+  "ignored_tests": [
+    "sim::civ::civ_tick::tests::construction::site_search_matches_the_single_site_rules_to_tick_18000",
+    "broadcaster::tests::measure_frame_egress_over_mature_worlds"
+  ],
+  "ignored_reason": "Both were already marked ignored/on-demand in the base repository; not executed."
+}

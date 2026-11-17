@@ -33,12 +33,17 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
   actions: read
 
 jobs:
   build:
     name: Desktop ${{ matrix.label }}
+    # Never build/publish upstream installers from a fork, even on manual dispatch.
+    if: ${{ github.repository == '1homsi/thehumanbox' }}
+    permissions:
+      contents: write
+      actions: read
     strategy:
       fail-fast: false
       matrix:

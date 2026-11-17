@@ -1,0 +1,9 @@
+{
+  "desktop_transfer": "worker validation, staging, byte comparison and migration commit",
+  "original_tick": 6000,
+  "resumed_tick": 6100,
+  "seed": 42,
+  "full_checkpoint_byte_equal": true,
+  "sha256": "99777e876c1af6762e9765143d2ab8628d2a91da5c650bb2edfd48c609233b30",
+  "rust_binary_commit": "7d49cd6d22011ad08ab784b5c8870c882dc09b6d"
+}

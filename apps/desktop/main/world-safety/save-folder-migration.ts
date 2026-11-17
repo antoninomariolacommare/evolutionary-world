@@ -5,6 +5,7 @@ import { atomicReplaceFile, atomicWriteNewFile, pathEntryExists, syncDirectoryBe
 import { requireExistingDataRootIdentity, resolveActiveWorldFiles } from "./data-root";
 import { rootsOverlap } from "./paths";
 import {
+  hasStableWorldSeed,
   validateWorldSaveBytes,
   validateWorldSaveBytesInWorker,
   type MigrationWorldExpectation,
@@ -57,7 +58,7 @@ export function inspectSaveFolderMigrationSource(
   const hash = activeWorld.hash;
   const bytes = fs.readFileSync(activeWorld.savePath);
   const validated = validateWorldSaveBytes(bytes);
-  if (validated.seedText === "0") {
+  if (!hasStableWorldSeed(validated)) {
     throw new Error(
       "the active world has no stable seed and cannot be migrated safely",
     );
@@ -77,7 +78,7 @@ export async function inspectSaveFolderMigrationSourceInWorker(
   const hash = activeWorld.hash;
   const bytes = await fs.promises.readFile(activeWorld.savePath);
   const validated = await validateWorldSaveBytesInWorker(bytes);
-  if (validated.seedText === "0") {
+  if (!hasStableWorldSeed(validated)) {
     throw new Error(
       "the active world has no stable seed and cannot be migrated safely",
     );

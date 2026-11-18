@@ -404,14 +404,14 @@ pub struct Animal {
     pub bonded_org: Option<String>,
     pub name: Option<String>,
     /// Direction kept between ticks so calm animals walk somewhere instead
-    /// of picking a new random direction every tick. Not persisted.
+    /// of picking a new random direction every tick. Persisted in schema 8.
     pub heading: u8,
-    /// Asleep for the winter (wild bears). Recomputed every tick, not saved.
+    /// Asleep for the winter (wild bears). Recomputed on animal updates; persisted for reads before that phase.
     pub sleeping: bool,
-    /// Flown south for the winter (wild birds). Recomputed every tick.
+    /// Flown south for the winter (wild birds). Recomputed on animal updates; persisted for reads before that phase.
     pub away: bool,
     /// How wary of people hunting has made the game where it stands, 0 to 1:
-    /// a wary animal bolts from further off. Recomputed every tick.
+    /// a wary animal bolts from further off. Recomputed on animal updates; persisted for reads before that phase.
     pub wary: f32,
     /// Tick the animal was born, when it came from a parent (0 for animals
     /// placed by the world or by a god power, which count as grown).
@@ -424,7 +424,7 @@ pub struct Animal {
     /// A wolf the player summoned (see the spawn animal command). Only these hunt as a pack at night and
     /// drive people to shelter; a wild wolf keeps its old behaviour, and so does a summoned one by day.
     pub summoned: bool,
-    /// A summoned wolf is out hunting this tick (it is night). Recomputed every tick, not saved.
+    /// A summoned wolf is out hunting this tick (it is night). Recomputed on animal updates; persisted for reads before that phase.
     pub hunting: bool,
 }
 

@@ -264,7 +264,9 @@ fn loading_legacy_guidance_creates_a_playable_objective() {
         .insert(lineage_id.clone(), ("settle".to_string(), 1_000));
     sim.lineage_strategy_objectives.clear();
 
-    let loaded = Simulation::from_save(0x001E_6AC7, sim.to_save_state());
+    let mut legacy = sim.to_save_state();
+    legacy.version = 7;
+    let loaded = Simulation::migrate_legacy_checkpoint(0x001E_6AC7, legacy).unwrap();
 
     let objective = loaded.lineage_strategy_objectives.get(&lineage_id).unwrap();
     assert_eq!(objective.strategy, "settle");
@@ -302,7 +304,9 @@ fn loading_repairs_zero_target_or_mismatched_guidance_objectives() {
         },
     );
 
-    let loaded = Simulation::from_save(0xBAD_0B1, sim.to_save_state());
+    let mut legacy = sim.to_save_state();
+    legacy.version = 7;
+    let loaded = Simulation::migrate_legacy_checkpoint(0xBAD_0B1, legacy).unwrap();
 
     let objective = loaded.lineage_strategy_objectives.get(&lineage_id).unwrap();
     assert_eq!(objective.strategy, "trade");

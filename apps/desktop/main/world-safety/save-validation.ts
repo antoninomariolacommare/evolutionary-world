@@ -4,7 +4,7 @@ import { Worker } from "node:worker_threads";
 
 export const MAX_REMOTE_SAVE_BYTES = 256 * 1024 * 1024;
 
-export const SUPPORTED_SAVE_SCHEMA_VERSION = 7;
+export const SUPPORTED_SAVE_SCHEMA_VERSION = 8;
 
 const EXPECTED_GRID_TILES = 800 * 400;
 const LEGACY_GRID_TILES = 600 * 300;
@@ -207,7 +207,7 @@ export function validateWorldSaveBytes(bytes: Uint8Array): ValidatedWorldSave {
     throw new Error("world save is missing its terrain grid");
   if (
     grid.tiles.length !== EXPECTED_GRID_TILES &&
-    grid.tiles.length !== LEGACY_GRID_TILES
+    !(version < 8 && grid.tiles.length === LEGACY_GRID_TILES)
   ) {
     throw new Error(
       `world save terrain has ${grid.tiles.length} tiles; expected ${EXPECTED_GRID_TILES}`,
@@ -272,11 +272,18 @@ export function validateWorldSaveBytesInWorker(
   });
 }
 
+/** Schema 0 used zero for an unknown seed; schemas 1–8 store a real Rust u64. */
+export function hasStableWorldSeed(
+  save: Pick<ValidatedWorldSave, "version" | "seedText">,
+): boolean {
+  return save.version !== 0 || save.seedText !== "0";
+}
+
 export function assertSameLoadedWorld(
   expected: ValidatedWorldSave,
   actual: ValidatedWorldSave,
 ): void {
-  if (expected.seedText === "0") {
+  if (!hasStableWorldSeed(expected)) {
     throw new Error(
       "world save has no stable world seed and cannot be imported safely",
     );

@@ -71,6 +71,7 @@ fn ash_soil_bonus(biome: crate::world::tiles::Biome) -> f32 {
 /// Chance per physics step that fertile open grass sprouts wild food.
 pub const WILD_FOOD_GROWTH: f32 = 0.0004;
 
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct PhysicsEngine {
     pub tick_count: u64,
     pub growth_mult: f32,

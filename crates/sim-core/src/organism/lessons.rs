@@ -96,7 +96,7 @@ pub const UPBRINGING: f32 = 0.4;
 /// How much of an elder's lesson the children by the fire take from the telling.
 pub const TOLD: f32 = 0.5;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Lessons([f32; Lesson::ALL.len()]);
 
 impl Lessons {

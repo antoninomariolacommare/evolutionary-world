@@ -8,6 +8,7 @@ export {
   validateWorldSaveBytes,
   validateWorldSaveBytesInWorker,
   assertSameLoadedWorld,
+  hasStableWorldSeed,
   downloadAndValidateWorldSave,
   validateWorldHash,
   chooseAvailableWorldHash,

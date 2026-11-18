@@ -18,16 +18,22 @@ mod file_io;
 mod from_save;
 mod organism;
 mod packed;
+pub(crate) mod pairs;
 mod repair;
 mod resize;
 #[cfg(test)]
 mod resize_tests;
+mod runtime;
 mod state;
 #[cfg(test)]
 mod tests;
 mod to_save;
+mod validation;
 
 pub use file_io::*;
 use organism::*;
 use repair::*;
 pub use state::*;
+
+#[cfg(test)]
+mod continuity_tests;

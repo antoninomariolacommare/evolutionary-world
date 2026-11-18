@@ -270,7 +270,7 @@ fn save_load_preserves_civilization_and_personal_progress() {
             lineage_id: "lineage-a".to_string(),
         }]
     );
-    assert_eq!(loaded.physics.tick_count, 8_400);
+    assert_eq!(loaded.physics.tick_count, sim.physics.tick_count);
 
     let loaded_org = loaded.organisms.iter().find(|o| o.id == org_id).unwrap();
     assert_eq!(loaded_org.wealth, 321);

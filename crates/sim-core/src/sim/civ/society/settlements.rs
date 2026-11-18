@@ -14,12 +14,16 @@ const POPULATION_REQUIREMENTS: [usize; 6] = [0, 1, 4, 8, 15, 25];
 const BUILDING_REQUIREMENTS: [usize; 6] = [0, 1, 2, 4, 8, 12];
 const SCORE_REQUIREMENTS: [u32; 6] = [0, 8, 24, 56, 120, 240];
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+// Names are interned in TIER_NAMES on import, never borrowed from checkpoint bytes.
+type TierName = &'static str;
+
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct SettlementSnapshot {
     pub lineage_id: String,
     pub name: String,
     pub tier: u8,
-    pub tier_name: &'static str,
+    #[serde(deserialize_with = "restore_tier_name")]
+    pub tier_name: TierName,
     pub center: [i32; 2],
     pub population: usize,
     pub building_count: usize,
@@ -29,6 +33,14 @@ pub struct SettlementSnapshot {
     /// contribution. Housing is weighted most strongly; civic and industry
     /// capacity are the next strongest foundations of durable settlement.
     pub score: u32,
+}
+
+fn restore_tier_name<'de, D: serde::Deserializer<'de>>(d: D) -> Result<&'static str, D::Error> {
+    let name = <String as serde::Deserialize>::deserialize(d)?;
+    TIER_NAMES
+        .into_iter()
+        .find(|candidate| *candidate == name)
+        .ok_or_else(|| serde::de::Error::custom("invalid settlement tier name"))
 }
 
 #[derive(Default)]
@@ -389,7 +401,9 @@ mod tests {
         sim.settlement_tiers.insert(lineage_id.clone(), 5);
         sim.settlement_tiers.insert("stale-save".to_string(), 4);
 
-        let loaded = Simulation::from_save(601, sim.to_save_state());
+        let mut legacy = sim.to_save_state();
+        legacy.version = 7;
+        let loaded = Simulation::migrate_legacy_checkpoint(601, legacy).unwrap();
 
         assert_eq!(loaded.settlement_tiers.len(), 1);
         assert_eq!(loaded.settlement_tiers.get(&lineage_id), Some(&2));

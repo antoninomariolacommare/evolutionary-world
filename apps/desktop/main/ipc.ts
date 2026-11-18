@@ -32,6 +32,7 @@ import {
   assertEmptyOrIdentifiedDataRoot,
   assertExportOutsideDataRoot,
   assertSameLoadedWorld,
+  hasStableWorldSeed,
   assertNoLegacyWorldAtMigrationTarget,
   assertNoUnmigratedLegacyWorld,
   beginSaveFolderMigration,
@@ -204,7 +205,7 @@ async function verifyFreshWorldLoaded(
   const loaded = await validateWorldSaveBytesInWorker(
     await fs.promises.readFile(world.savePath),
   );
-  if (loaded.seedText === "0") {
+  if (!hasStableWorldSeed(loaded)) {
     throw new Error(
       "new local world has no stable seed and cannot be committed",
     );

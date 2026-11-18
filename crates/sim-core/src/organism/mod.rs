@@ -5,7 +5,7 @@ pub mod decision_bias;
 pub mod family_words;
 pub mod lessons;
 pub mod memory;
-mod navigation;
+pub(crate) mod navigation;
 #[allow(clippy::module_inception)]
 pub mod organism;
 pub mod personality;

@@ -1,0 +1,9 @@
+{
+  "baseline_headless": "fd902e23120131d31b3c1836bb6efc0e1f968c2e70a8389b0527c5acabc866a5",
+  "current_headless": "d21922d417202d624e7df303151f8f994a4947bd9160834d703fe0a9f6a6f436",
+  "platform": "Linux x86_64",
+  "rustc": "1.100.0 (0ef1bc386 2026-11-09)",
+  "base_commit": "4667dc190f1a3531466d3601e55d5a01d6d97711",
+  "cpu_quota": "200000/100000",
+  "memory_limit_bytes": 8589934592
+}

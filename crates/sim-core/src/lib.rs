@@ -35,7 +35,6 @@ fn stamp_frame(frame: &mut FramePayload, frame_id: u32, now_ms: f64, full: bool)
 #[cfg(target_arch = "wasm32")]
 mod wasm_facade {
     use super::{frame_is_complete, stamp_frame};
-    use crate::sim::persistence::SaveState;
     use crate::sim::simulation::Simulation;
     use wasm_bindgen::prelude::*;
 
@@ -55,23 +54,9 @@ mod wasm_facade {
 
         #[wasm_bindgen(js_name = fromSerialized)]
         pub fn from_serialized(seed: u64, bytes: &[u8]) -> Result<Sim, JsValue> {
-            let state = serde_json::from_slice::<SaveState>(bytes)
-                .map_err(|error| JsValue::from_str(&format!("invalid world save: {error}")))?;
-            if state.version != 0 && state.version > crate::sim::simulation::SAVE_SCHEMA_VERSION {
-                return Err(JsValue::from_str(&format!(
-                    "world save schema v{} is newer than supported v{}",
-                    state.version,
-                    crate::sim::simulation::SAVE_SCHEMA_VERSION
-                )));
-            }
-            let terrain_seed = if state.world_seed > 0 {
-                state.world_seed
-            } else {
-                seed
-            };
-            Ok(Sim {
-                inner: Simulation::from_save(terrain_seed, state),
-            })
+            let inner =
+                Simulation::from_checkpoint_bytes(seed, bytes).map_err(|error| JsValue::from_str(&error))?;
+            Ok(Sim { inner })
         }
 
         pub fn tick(&mut self) {

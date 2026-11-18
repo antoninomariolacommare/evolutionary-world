@@ -3,6 +3,7 @@ use super::*;
 #[derive(Default, Serialize, Deserialize)]
 #[serde(default)]
 pub(crate) struct OrgSave {
+    pub(super) runtime: Option<OrgRuntimeSave>,
     pub(super) id: String,
     pub(super) name: String,
     pub(super) x: f32,
@@ -200,6 +201,8 @@ pub(crate) struct CarcassSave {
 #[derive(Default, Serialize, Deserialize)]
 #[serde(default)]
 pub(crate) struct AnimalSave {
+    pub(super) runtime: Option<AnimalRuntimeSave>,
+    pub(super) heading: Option<u8>,
     pub(super) id: usize,
     pub(super) x: f32,
     pub(super) y: f32,
@@ -246,6 +249,14 @@ pub(super) fn mem_decode(m: HashMap<String, f32>) -> FxHashMap<(i32, i32), f32> 
 
 pub(super) fn org_to_save(o: &Organism) -> OrgSave {
     OrgSave {
+        runtime: Some(OrgRuntimeSave {
+            motion: [o.prev_x, o.prev_y, o.vx_smooth, o.vy_smooth],
+            skills: o.skills,
+            lessons: o.lessons,
+            route: o.route.borrow().clone(),
+            work: o.work,
+            last_harm: o.last_harm,
+        }),
         id: o.id.clone(),
         name: o.name.clone(),
         x: o.x,
@@ -368,7 +379,9 @@ pub(super) fn org_from_save(s: OrgSave, save_version: u32) -> Organism {
         let id_seed = s.id.bytes().fold(0u64, |a, b| a.wrapping_add(b as u64));
         lid_seed ^ id_seed
     };
-    let needs_vocab = s.vocabulary.is_empty();
+    let exact = save_version == SAVE_SCHEMA_VERSION;
+    let runtime = s.runtime;
+    let needs_vocab = !exact && s.vocabulary.is_empty();
     let saved_vocab = s.vocabulary;
     let mut o = Organism::new(
         s.id,
@@ -406,7 +419,7 @@ pub(super) fn org_from_save(s: OrgSave, save_version: u32) -> Organism {
     // Prefer the structured LifeEvent log; fall back to legacy string
     // log only if no structured entries exist (handles pre-LifeEvent
     // saves without losing the history).
-    o.life_log = if !s.life_log.is_empty() {
+    o.life_log = if exact || !s.life_log.is_empty() {
         s.life_log.into_iter().collect()
     } else {
         s.life_log_legacy
@@ -421,7 +434,7 @@ pub(super) fn org_from_save(s: OrgSave, save_version: u32) -> Organism {
             .collect()
     };
     o.discoveries = s.discoveries.into_iter().collect();
-    if s.home_x != 0.0 || s.home_y != 0.0 {
+    if exact || s.home_x != 0.0 || s.home_y != 0.0 {
         o.home_x = s.home_x;
         o.home_y = s.home_y;
     }
@@ -462,13 +475,13 @@ pub(super) fn org_from_save(s: OrgSave, save_version: u32) -> Organism {
     o.inv_stone = s.inv_stone;
     o.friends = s.friends;
     o.anchor_events = s.anchor_events;
-    if !s.memories.entries.is_empty() {
+    if exact || !s.memories.entries.is_empty() {
         o.memories = s.memories;
     }
-    if !s.zodiac.is_empty() {
+    if exact || !s.zodiac.is_empty() {
         o.zodiac = s.zodiac;
     }
-    if s.birth_tick > 0 {
+    if exact || s.birth_tick > 0 {
         o.birth_tick = s.birth_tick;
     }
     if save_version >= 4 {
@@ -511,6 +524,14 @@ pub(super) fn org_from_save(s: OrgSave, save_version: u32) -> Organism {
         o.vocabulary = crate::organism::vocabulary::Vocabulary::generate(&mut voc_rng);
     } else {
         o.vocabulary = saved_vocab;
+    }
+    if let Some(runtime) = runtime {
+        [o.prev_x, o.prev_y, o.vx_smooth, o.vy_smooth] = runtime.motion;
+        *o.route.get_mut() = runtime.route;
+        o.skills = runtime.skills;
+        o.lessons = runtime.lessons;
+        o.work = runtime.work;
+        o.last_harm = runtime.last_harm;
     }
     o
 }
@@ -602,6 +623,13 @@ pub(super) fn kind_from_code(code: u8) -> AnimalKind {
 
 pub(super) fn animal_to_save(a: &Animal) -> AnimalSave {
     AnimalSave {
+        runtime: Some(AnimalRuntimeSave {
+            sleeping: a.sleeping,
+            away: a.away,
+            wary: a.wary,
+            hunting: a.hunting,
+        }),
+        heading: Some(a.heading),
         id: a.id,
         x: a.x,
         y: a.y,
@@ -621,6 +649,9 @@ pub(super) fn animal_to_save(a: &Animal) -> AnimalSave {
 pub(super) fn animal_from_save(s: AnimalSave) -> Animal {
     let kind = kind_from_code(s.kind);
     let mut a = Animal::new(s.id, s.x, s.y, kind);
+    if let Some(heading) = s.heading {
+        a.heading = heading;
+    }
     a.alive = s.alive;
     a.energy = s.energy;
     a.last_reproduced = s.last_reproduced;
@@ -630,5 +661,33 @@ pub(super) fn animal_from_save(s: AnimalSave) -> Animal {
     a.keeper = s.keeper;
     a.pen = s.pen;
     a.summoned = s.summoned;
+    if let Some(runtime) = s.runtime {
+        a.sleeping = runtime.sleeping;
+        a.away = runtime.away;
+        a.wary = runtime.wary;
+        a.hunting = runtime.hunting;
+    }
     a
+}
+
+/// Temporal state formerly mistaken for disposable caches. Required in schema 8.
+#[derive(Serialize, Deserialize)]
+pub(super) struct OrgRuntimeSave {
+    // Used by steering and movement rewards, not just interpolation.
+    pub motion: [f32; 4],
+    // Legacy named maps round these values; the arrays retain every f32 bit.
+    pub skills: crate::organism::skills::Skills,
+    pub lessons: crate::organism::lessons::Lessons,
+    pub route: crate::organism::navigation::RouteCache,
+    pub work: Option<crate::sim::agents::daily_work::WorkPlan>,
+    pub last_harm: Option<(crate::organism::organism::Harm, u64)>,
+}
+
+/// Civil systems can read these flags before the next animal update.
+#[derive(Serialize, Deserialize)]
+pub(super) struct AnimalRuntimeSave {
+    pub sleeping: bool,
+    pub away: bool,
+    pub wary: f32,
+    pub hunting: bool,
 }

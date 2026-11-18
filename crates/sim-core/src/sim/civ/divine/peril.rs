@@ -17,7 +17,7 @@ const PERIL_MIN_PEAK: u32 = 8;
 pub(crate) const PERIL_STEP: u64 = 300;
 
 /// What a tribe on the brink is dying of, as the player reads it.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum PerilCause {
     Sickness,
     Hunger,
@@ -67,7 +67,7 @@ impl PerilCause {
 }
 
 /// A tribe the world has warned about.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Peril {
     pub population: u32,
     pub peak: u32,

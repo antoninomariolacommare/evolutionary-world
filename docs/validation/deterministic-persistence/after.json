@@ -1,0 +1,205 @@
+{
+  "runs": [
+    {
+      "name": "after-continuous",
+      "command": [
+        "/workspace/work/implementation-target/release/headless",
+        "--seed",
+        "42",
+        "--ticks",
+        "6100",
+        "--every",
+        "1000",
+        "--save",
+        "/workspace/work/implementation-evidence/after-continuous.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 47.927
+    },
+    {
+      "name": "after-checkpoint",
+      "command": [
+        "/workspace/work/implementation-target/release/headless",
+        "--seed",
+        "42",
+        "--ticks",
+        "6000",
+        "--every",
+        "1000",
+        "--save",
+        "/workspace/work/implementation-evidence/after-checkpoint.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 47.789
+    },
+    {
+      "name": "after-zero",
+      "command": [
+        "/workspace/work/implementation-target/release/headless",
+        "--load",
+        "/workspace/work/implementation-evidence/after-checkpoint.json",
+        "--ticks",
+        "6000",
+        "--every",
+        "1000",
+        "--save",
+        "/workspace/work/implementation-evidence/after-zero.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 4.505
+    },
+    {
+      "name": "after-6001-continuous",
+      "command": [
+        "/workspace/work/implementation-target/release/headless",
+        "--seed",
+        "42",
+        "--ticks",
+        "6001",
+        "--every",
+        "1000",
+        "--save",
+        "/workspace/work/implementation-evidence/after-6001-continuous.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 59.972
+    },
+    {
+      "name": "after-6001-resumed",
+      "command": [
+        "/workspace/work/implementation-target/release/headless",
+        "--load",
+        "/workspace/work/implementation-evidence/after-checkpoint.json",
+        "--ticks",
+        "6001",
+        "--every",
+        "1000",
+        "--save",
+        "/workspace/work/implementation-evidence/after-6001-resumed.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 11.926
+    },
+    {
+      "name": "after-resumed",
+      "command": [
+        "/workspace/work/implementation-target/release/headless",
+        "--load",
+        "/workspace/work/implementation-evidence/after-checkpoint.json",
+        "--ticks",
+        "6100",
+        "--every",
+        "1000",
+        "--save",
+        "/workspace/work/implementation-evidence/after-resumed.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 10.957
+    },
+    {
+      "name": "after-migrated",
+      "command": [
+        "/workspace/work/implementation-target/release/headless",
+        "--load",
+        "/workspace/work/implementation-evidence/before-checkpoint.json",
+        "--ticks",
+        "6000",
+        "--every",
+        "1000",
+        "--save",
+        "/workspace/work/implementation-evidence/after-migrated.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 6.2
+    },
+    {
+      "name": "after-migrated-direct",
+      "command": [
+        "/workspace/work/implementation-target/release/headless",
+        "--load",
+        "/workspace/work/implementation-evidence/before-checkpoint.json",
+        "--ticks",
+        "6100",
+        "--every",
+        "1000",
+        "--save",
+        "/workspace/work/implementation-evidence/after-migrated-direct.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 10.509
+    },
+    {
+      "name": "after-migrated-resumed",
+      "command": [
+        "/workspace/work/implementation-target/release/headless",
+        "--load",
+        "/workspace/work/implementation-evidence/after-migrated.json",
+        "--ticks",
+        "6100",
+        "--every",
+        "1000",
+        "--save",
+        "/workspace/work/implementation-evidence/after-migrated-resumed.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 12.3
+    }
+  ],
+  "comparisons": [
+    {
+      "tick": 6000,
+      "left": "after-checkpoint",
+      "right": "after-zero",
+      "byte_equal": true,
+      "rng_equal": true,
+      "different_fields": [],
+      "sha256_left": "28e19fcf5a37d381151ef862ea4aaec79fbf85d3d48b53dd45622e7bf907a82f",
+      "sha256_right": "28e19fcf5a37d381151ef862ea4aaec79fbf85d3d48b53dd45622e7bf907a82f",
+      "bytes_left": 23037068,
+      "bytes_right": 23037068
+    },
+    {
+      "tick": 6001,
+      "left": "after-6001-continuous",
+      "right": "after-6001-resumed",
+      "byte_equal": true,
+      "rng_equal": true,
+      "different_fields": [],
+      "sha256_left": "2754599cc8a53e77019636a6a06746b6959390e4cd96e8664d68cfc919398fad",
+      "sha256_right": "2754599cc8a53e77019636a6a06746b6959390e4cd96e8664d68cfc919398fad",
+      "bytes_left": 23043812,
+      "bytes_right": 23043812
+    },
+    {
+      "tick": 6100,
+      "left": "after-continuous",
+      "right": "after-resumed",
+      "byte_equal": true,
+      "rng_equal": true,
+      "different_fields": [],
+      "sha256_left": "99777e876c1af6762e9765143d2ab8628d2a91da5c650bb2edfd48c609233b30",
+      "sha256_right": "99777e876c1af6762e9765143d2ab8628d2a91da5c650bb2edfd48c609233b30",
+      "bytes_left": 23276733,
+      "bytes_right": 23276733
+    },
+    {
+      "tick": 6100,
+      "left": "after-migrated-direct",
+      "right": "after-migrated-resumed",
+      "byte_equal": true,
+      "rng_equal": true,
+      "different_fields": [],
+      "sha256_left": "26a47101edf2dbd7a7f752c4b4b73831ec29ca018a9b0b33cfd231ad76da78ba",
+      "sha256_right": "26a47101edf2dbd7a7f752c4b4b73831ec29ca018a9b0b33cfd231ad76da78ba",
+      "bytes_left": 20674050,
+      "bytes_right": 20674050
+    }
+  ],
+  "uninterrupted_old_schema_projection": {
+    "equal": true,
+    "different_fields": [],
+    "method": "Remove schema-8 runtime/heading/last_work_tick fields; normalize version; apply legacy save-time history caps and wariness sort. No simulation values otherwise transformed."
+  },
+  "before_checkpoint_bytes": 19479908,
+  "after_checkpoint_bytes": 23037068
+}

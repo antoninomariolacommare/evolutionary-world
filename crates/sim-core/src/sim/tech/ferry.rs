@@ -55,14 +55,14 @@ const BUILD_TICKS: u64 = 24;
 
 /// What the last survey found: the landmass each walkable tile belongs to (`u32::MAX` for water and
 /// rock), and for each tribe the landmasses where its members live (the tribes a ferry is planned for).
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct FerrySurvey {
     landmass: Vec<u32>,
     kin: BTreeMap<String, Vec<u32>>,
 }
 
 /// A person in a pier's queue or aboard a ferry, and the errand that brought them to the water.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub(crate) struct Passenger {
     /// Where the person stood in `Simulation::organisms` when last checked (see `locate`).
     idx: usize,
@@ -74,11 +74,12 @@ pub(crate) struct Passenger {
     since: u64,
 }
 
-/// The ferry queues. They are not saved: the errands are, through the people's journeys.
+/// The ferry queues. Saved with the passengers, their order and cooldowns in schema 8.
 /// `piers` holds, per pier (a ferry's id and side, 0 at its `a` landing and 1 at `b`), the people
 /// queued for it in the order they joined. `aboard` holds, per ferry, the passengers it carries.
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct FerryQueues {
+    #[serde(with = "crate::sim::persistence::pairs")]
     piers: BTreeMap<(u32, usize), Vec<Passenger>>,
     aboard: BTreeMap<u32, Vec<Passenger>>,
     /// Ticks until which a person who gave up waiting may not queue again.
